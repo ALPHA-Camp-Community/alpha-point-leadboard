@@ -22,24 +22,6 @@ type PointData = {
   totalDataCount: number
 }
 
-const pointDataInit = {
-  data: [
-    {
-      id: '',
-      name: '',
-      avatarURL: '',
-      period: '',
-      discordId: '',
-      point: 0,
-    }
-  ],
-  offset: 0,
-  pageSize: 0,
-  totalPages: 0,
-  currentPage: 0,
-  totalDataCount: 0
-}
-
 const fetcher = async (url: string) => {
   const res = await fetch(url)
   const data = await res.json()
@@ -49,7 +31,6 @@ const fetcher = async (url: string) => {
   }
   return data
 }
-
 
 export default function Home() {
   const { data, error, isLoading } = useSWR<
@@ -92,7 +73,7 @@ export default function Home() {
                   <div className="flex gap-4 mt-5 items-center">
                     <Image
                       className="rounded-full bg-white"
-                      src={u.avatarURL}
+                      src={"/AC_Logo.png"}
                       alt="logo"
                       width={50}
                       height={50}

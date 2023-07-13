@@ -2,7 +2,7 @@ import axios from 'axios'
 import { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const month = new Date().getMonth()
+  const month = new Date().getMonth() + 1
   const year = new Date().getFullYear()
   const twoDigitsMonth = month === 10 || month === 11 || month === 12 ? month : "0" + month
   try {
