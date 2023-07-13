@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import axios from 'axios'
-import { useEffect, useState } from 'react'
+import useSWR from 'swr'
+import { useState } from 'react'
 
 type Data = {
   id: string
@@ -40,28 +40,24 @@ const pointDataInit = {
   totalDataCount: 0
 }
 
+const fetcher = async (url: string) => {
+  const res = await fetch(url)
+  const data = await res.json()
+
+  if (res.status !== 200) {
+    throw new Error(data.message)
+  }
+  return data
+}
+
+
 export default function Home() {
-  const [pointData, setPointData] = useState<PointData>(pointDataInit)
-  const [loading, setLoading] = useState<boolean>(true)
+  const { data, error, isLoading } = useSWR<
+    PointData
+  >(() => (`/api/getPointData`), fetcher)
 
-  const month = new Date().getMonth()
-  const year = new Date().getFullYear()
-  const twoDigitsMonth = month === 10 || month === 11 || month === 12 ? month : "0" + month
-
-  useEffect(() => {
-    async function getData() {
-      try {
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}?date=${year}-${twoDigitsMonth}`)
-        const data = res.data
-        setPointData(data)
-        setLoading(false)
-      }
-      catch (e) {
-        console.log(e)
-      }
-    }
-    getData()
-  }, [year, twoDigitsMonth])
+  if (error) return <div>{error.message}</div>
+  if (!data) return null
 
   return (
     <>
@@ -89,9 +85,9 @@ export default function Home() {
               <p>User</p>
               <p>Point</p>
             </div>
-            {loading && <p className="mb-5">Loading...</p>}
-            {!loading && pointData.data.length !== 0
-              ? pointData.data.map((u, index) => (
+            {isLoading && <p className="mb-5">Loading...</p>}
+            {data.data.length !== 0
+              ? data.data.map((u, index) => (
                 <div key={index} className="flex justify-between items-center mb-4">
                   <div className="flex gap-4 mt-5 items-center">
                     <Image
@@ -106,7 +102,7 @@ export default function Home() {
                   <p>{u.point}</p>
                 </div>
               ))
-              : !loading && <div className="flex justify-between items-center mb-4">
+              : <div className="flex justify-between items-center mb-4">
                 <p>這個月還沒有人得到 Point</p>
               </div>
             }
