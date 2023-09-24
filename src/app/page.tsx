@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import {
   Box,
   Table,
@@ -11,25 +11,10 @@ import {
   Th,
   Thead,
   Tr,
+  Text,
+  Spinner,
 } from "@chakra-ui/react";
-
-type Data = {
-  id: string;
-  name: string;
-  avatarURL: string;
-  period: string;
-  discordId: string;
-  point: number;
-};
-
-type PointData = {
-  data: Data[];
-  offset: number;
-  pageSize: number;
-  totalPages: number;
-  currentPage: number;
-  totalDataCount: number;
-};
+import InfiniteScroll from "react-infinite-scroll-component";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -41,13 +26,21 @@ const fetcher = async (url: string) => {
   return data;
 };
 
+const PAGE_SIZE = 10;
+
 export default function Home() {
-  const { data, error, isLoading } = useSWR<PointData>(
-    () => `/api/getPointData`,
+  const { data, size, setSize, isLoading, error } = useSWRInfinite(
+    (index) => `/api/getPointData?page=${index + 1}`,
     fetcher
   );
 
-  if (error) return <p>維護中...</p>;
+  const isEmpty = data?.[0]?.length === 0;
+  const isLoadingMore =
+    isLoading || (size > 0 && data && typeof data[size - 1] === "undefined");
+  const isReachingEnd =
+    isEmpty || (data && data[data.length - 1]?.length < PAGE_SIZE);
+
+  if (error) return <Text>維護中...</Text>;
   if (!data) return null;
 
   return (
@@ -84,50 +77,75 @@ export default function Home() {
             </ul>
             <hr />
           </Box>
-          <TableContainer
-            display={"flex"}
-            justifyContent={"center"}
-            marginTop={"10px"}
+          <InfiniteScroll
+            next={() => !isReachingEnd && setSize(size + 1)}
+            hasMore={true}
+            loader={
+              <Box display={"inline-flex"} marginY={16}>
+                {isLoadingMore ? (
+                  <>
+                    <Spinner
+                      size={"lg"}
+                      width={24}
+                      height={24}
+                      marginRight={10}
+                    />
+                    <Text>Loading...</Text>
+                  </>
+                ) : isReachingEnd ? (
+                  <Text>沒有更多資料</Text>
+                ) : null}
+              </Box>
+            }
+            dataLength={data.length}
+            className="text-center"
           >
-            <Table className="rounded-md w-4/5">
-              <Thead className="text-left">
-                <Tr>
-                  <Th className="text-center">Rank</Th>
-                  <Th>User</Th>
-                  <Th className="text-center">🧡 Points</Th>
-                </Tr>
-              </Thead>
-              <Tbody className="text-left">
-                {isLoading && <p className="mb-5">Loading...</p>}
-                {data.data.length !== 0 ? (
-                  data.data
-                    .sort((a, b) => {
-                      return b.point - a.point;
-                    })
-                    .map((u, index) => (
-                      <Tr key={index}>
-                        <Td className="text-center">{index + 1}</Td>
-                        <Td className="flex gap-4 mt-5 items-center">
-                          <Image
-                            className="rounded-full bg-white"
-                            src={u.avatarURL}
-                            alt="logo"
-                            width={50}
-                            height={50}
-                          />
-                          {u.name}
-                        </Td>
-                        <Td className="text-center">{u.point}</Td>
-                      </Tr>
-                    ))
-                ) : (
-                  <Box className="flex justify-between items-center mb-4">
-                    <p>這個月還沒有人得到 Point</p>
-                  </Box>
-                )}
-              </Tbody>
-            </Table>
-          </TableContainer>
+            <TableContainer
+              display={"flex"}
+              justifyContent={"center"}
+              marginTop={"10px"}
+            >
+              <Table className="rounded-md w-4/5">
+                <Thead className="text-left">
+                  <Tr>
+                    <Th className="text-center">Rank</Th>
+                    <Th>User</Th>
+                    <Th className="text-center">🧡 Points</Th>
+                  </Tr>
+                </Thead>
+                <Tbody className="text-left">
+                  {isLoading && <p className="mb-5">Loading...</p>}
+                  {data.length !== 0 ? (
+                    data
+                      .flat()
+                      .sort((a, b) => {
+                        return b.point - a.point;
+                      })
+                      .map((u, index) => (
+                        <Tr key={index}>
+                          <Td className="text-center">{index + 1}</Td>
+                          <Td className="flex gap-4 mt-5 items-center">
+                            <Image
+                              className="rounded-full bg-white"
+                              src={u.avatarURL}
+                              alt="logo"
+                              width={50}
+                              height={50}
+                            />
+                            {u.name}
+                          </Td>
+                          <Td className="text-center">{u.point}</Td>
+                        </Tr>
+                      ))
+                  ) : (
+                    <Box className="flex justify-between items-center mb-4">
+                      <p>這個月還沒有人得到 Point</p>
+                    </Box>
+                  )}
+                </Tbody>
+              </Table>
+            </TableContainer>
+          </InfiniteScroll>
         </Box>
       </Box>
     </>
