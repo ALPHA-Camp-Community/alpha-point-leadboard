@@ -5,11 +5,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const month = new Date().getMonth() + 1;
-  const year = new Date().getFullYear();
-  const page = req.query.page;
-  const twoDigitsMonth =
-    month === 10 || month === 11 || month === 12 ? month : "0" + month;
+  const { page, twoDigitsMonth, year } = req.query;
   try {
     const fetch = await axios.get(
       `${process.env.NEXT_PUBLIC_API_URL}?date=${year}-${twoDigitsMonth}&page=${page}`

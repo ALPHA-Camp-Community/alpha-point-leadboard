@@ -13,8 +13,13 @@ import {
   Tr,
   Text,
   Spinner,
+  Input,
+  Button,
+  ButtonGroup,
 } from "@chakra-ui/react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import InfiniteScroll from "react-infinite-scroll-component";
+import { useState } from "react";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -29,10 +34,21 @@ const fetcher = async (url: string) => {
 const PAGE_SIZE = 10;
 
 export default function Home() {
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const [month, setMonth] = useState(currentMonth);
+  const [year, setYear] = useState(currentYear);
+  const twoDigitsMonth =
+    month === 10 || month === 11 || month === 12 ? month : "0" + month;
   const { data, size, setSize, isLoading, error } = useSWRInfinite(
-    (index) => `/api/getPointData?page=${index + 1}`,
+    (index) =>
+      `/api/getPointData?page=${
+        index + 1
+      }&year=${year}&twoDigitsMonth=${twoDigitsMonth}`,
     fetcher
   );
+
+  const [filterValue, setFilterValue] = useState<String | null>(null);
 
   const isEmpty = data?.[0]?.length === 0;
   const isLoadingMore =
@@ -42,6 +58,10 @@ export default function Home() {
 
   if (error) return <Text>維護中...</Text>;
   if (!data) return null;
+
+  const pointData = filterValue
+    ? data.flat().filter((u) => u.name.includes(filterValue))
+    : data.flat();
 
   return (
     <>
@@ -77,6 +97,57 @@ export default function Home() {
             </ul>
             <hr />
           </Box>
+          <Box
+            display={"flex"}
+            justifyContent={"flex-end"}
+            marginRight={16}
+            marginY={16}
+          >
+            <Input
+              placeholder="搜尋用戶名稱"
+              color={"black"}
+              onChange={(e) => setFilterValue(e.target.value)}
+            />
+          </Box>
+          <ButtonGroup
+            display={"flex"}
+            justifyContent={"flex-end"}
+            marginRight={20}
+          >
+            <Button>
+              {year === 2023 && month === 7 ? null : (
+                <ChevronLeftIcon
+                  backgroundColor={"white"}
+                  color={"black"}
+                  onClick={() => {
+                    setMonth(month - 1);
+                    if (month === 1) {
+                      setYear(year - 1);
+                      setMonth(12);
+                    }
+                  }}
+                />
+              )}
+            </Button>
+            <Text>
+              {year}-{twoDigitsMonth}
+            </Text>
+            <Button>
+              {year === currentYear && month === currentMonth ? null : (
+                <ChevronRightIcon
+                  backgroundColor={"white"}
+                  color={"black"}
+                  onClick={() => {
+                    setMonth(month + 1);
+                    if (month === 12) {
+                      setYear(year + 1);
+                      setMonth(1);
+                    }
+                  }}
+                />
+              )}
+            </Button>
+          </ButtonGroup>
           <InfiniteScroll
             next={() => !isReachingEnd && setSize(size + 1)}
             hasMore={true}
@@ -114,10 +185,8 @@ export default function Home() {
                   </Tr>
                 </Thead>
                 <Tbody className="text-left">
-                  {isLoading && <p className="mb-5">Loading...</p>}
-                  {data.length !== 0 ? (
-                    data
-                      .flat()
+                  {pointData.length !== 0 &&
+                    pointData
                       .sort((a, b) => {
                         return b.point - a.point;
                       })
@@ -136,15 +205,18 @@ export default function Home() {
                           </Td>
                           <Td className="text-center">{u.point}</Td>
                         </Tr>
-                      ))
-                  ) : (
-                    <Box className="flex justify-between items-center mb-4">
-                      <p>這個月還沒有人得到 Point</p>
-                    </Box>
-                  )}
+                      ))}
                 </Tbody>
               </Table>
             </TableContainer>
+            {filterValue && pointData.length === 0 ? (
+              <Text marginY={16}>此用戶尚未得到 Point</Text>
+            ) : (
+              !filterValue &&
+              pointData.length === 0 && (
+                <Text marginY={16}>這個月還沒有人得到 Point</Text>
+              )
+            )}
           </InfiniteScroll>
         </Box>
       </Box>
