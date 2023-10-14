@@ -59,9 +59,17 @@ export default function Home() {
   if (error) return <Text>維護中...</Text>;
   if (!data) return null;
 
-  const pointData = filterValue
-    ? data.flat().filter((u) => u.name.includes(filterValue))
-    : data.flat();
+  const pointData = data
+    .flat()
+    .sort((a, b) => b.point - a.point)
+    .map((v, index) => ({
+      ...v,
+      rank: index + 1,
+    }));
+
+  const leadBoardData = filterValue
+    ? pointData.filter((u) => u.name.toLowerCase().includes(filterValue))
+    : pointData;
 
   return (
     <>
@@ -186,26 +194,22 @@ export default function Home() {
                 </Thead>
                 <Tbody className="text-left">
                   {pointData.length !== 0 &&
-                    pointData
-                      .sort((a, b) => {
-                        return b.point - a.point;
-                      })
-                      .map((u, index) => (
-                        <Tr key={index}>
-                          <Td className="text-center">{index + 1}</Td>
-                          <Td className="flex gap-4 mt-5 items-center">
-                            <Image
-                              className="rounded-full bg-white"
-                              src={u.avatarURL}
-                              alt="logo"
-                              width={50}
-                              height={50}
-                            />
-                            {u.name}
-                          </Td>
-                          <Td className="text-center">{u.point}</Td>
-                        </Tr>
-                      ))}
+                    leadBoardData.map((u, index) => (
+                      <Tr key={index}>
+                        <Td className="text-center">{u.rank}</Td>
+                        <Td className="flex gap-4 mt-5 items-center">
+                          <Image
+                            className="rounded-full bg-white"
+                            src={u.avatarURL}
+                            alt="logo"
+                            width={50}
+                            height={50}
+                          />
+                          {u.name}
+                        </Td>
+                        <Td className="text-center">{u.point}</Td>
+                      </Tr>
+                    ))}
                 </Tbody>
               </Table>
             </TableContainer>
